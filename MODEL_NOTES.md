@@ -55,7 +55,7 @@ move forward 24 hours, and re-optimise
 ```
 
 The extra day of visibility exists so that decisions near the end of one
-day are not made blind to prices just beyond midnight - a plain 24-hour
+day are not made blind to prices just beyond midnight - a plain 24-hour-only
 optimisation could, for example, discharge late in the day without
 "seeing" a much more profitable opportunity a few hours later. 48 hours
 is a reasonable, simple choice for this exercise, not a claim that it is
@@ -74,7 +74,7 @@ has no defined value in this model.
 
 ## Cycles
 
-Equivalent full cycles (EFC) are defined as storage-side discharged
+An equivalent full cycle (EFC) is measured here as the total storage-side discharged
 energy (i.e. energy leaving the battery's stored volume, before
 discharge losses) divided by the battery's original nominal storage
 capacity. The supplied 5,000-cycle lifetime is enforced as a hard
@@ -83,8 +83,7 @@ constraint on cumulative EFC.
 ## Degradation
 
 The supplied degradation rate (0.001% of storage capacity lost per
-cycle) is used directly and linearly - no more elaborate battery-ageing
-model is justified for a rate this small over this exercise's scope.
+cycle) is used directly and linearly. For the scope of this exercise, the supplied linear degradation relationship is used directly rather than introducing a more detailed battery-ageing model that is not specified in the input data.
 Capacity is updated once between each executed 24-hour block, directly
 from cumulative executed EFC (not compounded block-by-block); only
 executed operation ever changes the battery's permanent state, never the
