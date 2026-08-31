@@ -9,6 +9,9 @@ dependencies = [
     "pulp",
 ]
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
