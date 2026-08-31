@@ -109,12 +109,18 @@ duration or alignment.
 
 The dispatch objective is trading profit only - revenue from discharging
 minus expenditure on charging, at the market price, summed over executed
-periods. CAPEX and fixed annual operating costs are not part of that
-optimisation objective; they are recorded in the output workbook's
-`Inputs` sheet for reference, not netted against dispatch profit.
-Negative prices are preserved throughout and handled naturally by the
-objective (a negative price makes charging profitable and discharging
-costly in that period).
+periods. Negative prices are preserved throughout and handled naturally
+by the objective (a negative price makes charging profitable and
+discharging costly in that period).
+
+CAPEX and fixed OPEX do not affect the optimal dispatch because they are
+fixed with respect to individual charging and discharging decisions.
+Fixed OPEX is nevertheless deducted afterwards (in the output workbook's
+`Summary` sheet) to report operating profit over the simulated period.
+CAPEX remains visible only in the `Inputs` sheet, since it is part of the
+supplied battery specification. Investment payback is left as a potential
+extension, because it would require assumptions about future market
+prices and battery operation beyond the supplied dataset.
 
 ## Limitations / with more time
 

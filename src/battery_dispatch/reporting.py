@@ -27,6 +27,27 @@ def _energy_mwh(power_mw: pd.Series) -> float:
     return float((power_mw * DELTA_T_HOURS).sum())
 
 
+def observed_years(dispatch: pd.DataFrame) -> float:
+    """Duration spanned by the dispatch, in years.
+
+    Complete calendar years (e.g. the supplied 2018-01-01 to 2021-01-01
+    dataset) are counted exactly as whole years, so a leap year inside the
+    span does not turn "3 complete years" into 3.00068 years. Any other
+    (e.g. partial-year) span falls back to a simple day-count
+    approximation.
+    """
+    start = dispatch["timestamp"].iloc[0]
+    end_exclusive = dispatch["timestamp"].iloc[-1] + pd.Timedelta(hours=DELTA_T_HOURS)
+
+    def _is_year_boundary(ts: pd.Timestamp) -> bool:
+        return (ts.month, ts.day, ts.hour, ts.minute, ts.second) == (1, 1, 0, 0, 0)
+
+    if _is_year_boundary(start) and _is_year_boundary(end_exclusive) and end_exclusive.year > start.year:
+        return float(end_exclusive.year - start.year)
+
+    return (end_exclusive - start).total_seconds() / (365.25 * 24 * 3600)
+
+
 def _summary_frame(dispatch: pd.DataFrame, result: SimulationResult, battery: BatterySpec) -> pd.DataFrame:
     charging_expenditure = float(
         (dispatch["market_1_price"] * dispatch["charge_m1_mw"] * DELTA_T_HOURS)
@@ -51,11 +72,18 @@ def _summary_frame(dispatch: pd.DataFrame, result: SimulationResult, battery: Ba
     m2_charging_negative = (dispatch["charge_m2_mw"] > CHARGING_POWER_TOLERANCE_MW) & (dispatch["market_2_price"] < 0)
     negative_price_charging_periods = int((m1_charging_negative | m2_charging_negative).sum())
 
+    # Fixed OPEX does not affect the optimal dispatch because it is
+    # independent of the charging/discharging decisions. It is deducted
+    # afterwards to report operating profit over the simulated period.
+    fixed_opex = battery.fixed_opex_gbp_per_year * observed_years(dispatch)
+
     rows = [
         ("Simulation start", dispatch["timestamp"].iloc[0]),
         ("Simulation end", dispatch["timestamp"].iloc[-1]),
         ("Number of half-hour periods", len(dispatch)),
         ("Total trading profit (GBP)", result.total_profit),
+        ("Fixed operating cost (GBP)", fixed_opex),
+        ("Operating profit after fixed OPEX (GBP)", result.total_profit - fixed_opex),
         ("Charging expenditure (GBP)", charging_expenditure),
         ("Discharge revenue (GBP)", discharge_revenue),
         ("Total purchased energy (MWh)", m1_charge_energy + m2_charge_energy),

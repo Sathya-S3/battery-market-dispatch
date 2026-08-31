@@ -4,13 +4,13 @@
 
 Uses the supplied battery specification, the current data/run_config.xlsx
 scenario switches, and the prepared market-price data. Solving the full
-~3-year dataset takes several minutes (roughly 6-7 on a typical laptop).
+~3-year dataset takes several minutes (roughly 6-7 on the machine using during development).
 """
 
 import time
 
 from battery_dispatch.data import load_battery_spec, load_market_prices, load_run_config
-from battery_dispatch.reporting import write_report
+from battery_dispatch.reporting import observed_years, write_report
 from battery_dispatch.simulation import run_simulation
 
 
@@ -32,6 +32,9 @@ def main() -> None:
     print(f"Cumulative EFC: {result.cumulative_efc:.1f} (lifetime {battery.lifetime_cycles:.0f})")
     print(f"Final SoC: {result.final_soc:.3f} MWh")
     print(f"Final usable capacity: {result.final_usable_capacity:.4f} MWh (nominal {battery.max_storage_mwh} MWh)")
+
+    fixed_opex = battery.fixed_opex_gbp_per_year * observed_years(result.dispatch)
+    print(f"Operating profit after fixed OPEX: GBP {result.total_profit - fixed_opex:,.2f}")
     print(f"Results written to {output_path}")
 
 
