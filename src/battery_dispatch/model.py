@@ -1,4 +1,5 @@
-"""Single-window battery dispatch optimisation (MILP via PuLP/CBC).
+"""Single-window battery dispatch optimisation using mixed-integer
+linear programming (MILP), solved with PuLP/CBC.
 
 Optimises charging/discharging power against Market 1 (half-hourly) and
 Market 2 (hourly) prices over one supplied window of half-hour periods,

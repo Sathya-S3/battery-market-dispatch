@@ -64,9 +64,9 @@ def run_simulation(prices: pd.DataFrame, battery: BatterySpec, config: RunConfig
             force_terminal_empty=is_final_block,
         )
 
-        # Only the first 24 hours are executed; the rest of the solved
-        # window was look-ahead used purely to inform today's decisions
-        # and is discarded, not counted towards profit/EFC/SoC.
+        # Only the first 24 hours are executed. The remaining look-ahead
+        # decisions help inform the executed day but are then discarded;
+        # they do not contribute to profit, cycle usage or carried state.
         executed = result.dispatch.iloc[:execute_len].copy()
 
         executed_storage_discharge = (
@@ -80,12 +80,10 @@ def run_simulation(prices: pd.DataFrame, battery: BatterySpec, config: RunConfig
         else:
             current_usable_capacity = battery.max_storage_mwh
 
-        # Degradation is only applied between blocks (not modelled within
-        # the optimisation itself), so it can legitimately leave the
-        # battery holding slightly more energy than its newly-reduced
-        # capacity allows. This simplified model treats that small excess
-        # as lost along with the capacity reduction, rather than adding a
-        # within-window degradation constraint to avoid it.
+        # Capacity degradation is applied between executed daily blocks.
+        # If the updated capacity falls slightly below the carried state of
+        # charge, the small excess is treated as energy lost with the
+        # capacity reduction.
         carried_soc = executed["soc_mwh"].iloc[-1]
         initial_soc = min(carried_soc, current_usable_capacity)
 

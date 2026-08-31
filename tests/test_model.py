@@ -129,8 +129,8 @@ def test_market_2_hourly_commitment_when_used():
 
     assert d["charge_m2_mw"].iloc[0] == pytest.approx(d["charge_m2_mw"].iloc[1], abs=TOL)
     assert d["discharge_m2_mw"].iloc[2] == pytest.approx(d["discharge_m2_mw"].iloc[3], abs=TOL)
-    assert d["charge_m2_mw"].iloc[0] > TOL, "test is only meaningful if Market 2 is actually used"
-    assert d["discharge_m2_mw"].iloc[2] > TOL, "test is only meaningful if Market 2 is actually used"
+    assert d["charge_m2_mw"].iloc[0] > TOL, "Expected Market 2 charging in this test case."
+    assert d["discharge_m2_mw"].iloc[2] > TOL, "Expected Market 2 discharging in this test case."
 
 
 def test_terminal_empty_forces_zero_final_soc():

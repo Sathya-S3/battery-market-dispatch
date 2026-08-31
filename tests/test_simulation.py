@@ -67,10 +67,8 @@ def test_rolling_carry_forward_uses_executed_soc_not_lookahead_soc():
         - total_discharge * DELTA_T_HOURS / eta_discharge
     )
 
-    # This is the actual carry-forward check: the first row of block 2 must
-    # balance against the end of block 1's EXECUTED portion. If the wrong
-    # state (e.g. the provisional 48h-look-ahead SoC) had been passed into
-    # the second optimise_window() call, this balance would not hold.
+    # The first row of block 2 must balance from the SoC at the end of
+    # block 1's executed portion, not from the end of its look-ahead.
     assert next_row["soc_mwh"] == pytest.approx(expected_next_soc, abs=TOL)
 
     # Confirm the test setup is actually meaningful: the executed-block

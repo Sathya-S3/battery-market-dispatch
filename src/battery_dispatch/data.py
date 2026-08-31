@@ -20,11 +20,11 @@ class BatterySpec:
     max_charge_mw: float
     max_discharge_mw: float
     max_storage_mwh: float
-    charging_loss_fraction: float  # supplied as "efficiency" but is a loss fraction
+    charging_loss_fraction: float  # Labelled "efficiency" in the supplied workbook; description defines a loss fraction.
     discharging_loss_fraction: float  # same as above
     lifetime_years: float
     lifetime_cycles: float
-    degradation_pct_per_cycle: float  # supplied in %, not as a fraction
+    degradation_pct_per_cycle: float  # Percentage loss per cycle, e.g. 0.001 means 0.001%.
     capex_gbp: float
     fixed_opex_gbp_per_year: float
 
