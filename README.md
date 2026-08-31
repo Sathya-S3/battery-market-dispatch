@@ -4,17 +4,30 @@ Models the charging and discharging of a price-taking battery across two wholesa
 
 ## Setup
 
-```bash
+**Windows (PowerShell)** - this is what the submission was developed and verified on:
+
+```powershell
 python -m venv .venv
-.venv/Scripts/activate   # or source .venv/bin/activate on macOS/Linux
-pip install -e .
-```
-
-To install the additional dependency required for the test suite, use:
-
-```bash
+.venv\Scripts\Activate.ps1
 pip install -e ".[test]"
 ```
+
+If PowerShell blocks the activation script (execution policy), you can skip
+activation entirely and call the venv's Python directly for every command
+below, e.g. `.venv\Scripts\python.exe -m battery_dispatch.run`.
+
+**macOS/Linux/Git Bash**:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[test]"
+```
+
+Note: a virtual environment is tied to the Python/OS it was created with.
+Do not try to `source`/activate a Windows-created `.venv` from WSL (or vice
+versa) - create a separate `.venv` inside whichever shell you are actually
+running commands from.
 
 ## Prepare data
 
@@ -35,7 +48,7 @@ To run the optimisation over the complete prepared dataset, use:
 python -m battery_dispatch.run
 ```
 
-This loads the battery spec, the scenario switches in `data/run_config.xlsx`, and the prepared price data; runs the full rolling-horizon simulation over the entire ~3-year dataset; and writes a timestamped results workbook to `outputs/optimisation_YYYYMMDD_HHMMSS.xlsx` (previous runs are never overwritten). Solving the full dataset takes several minutes (roughly 6–7 minutes on the Windows machine used for this submission), since it repeatedly re-solves a mixed-integer linear programming (MILP) problem as it rolls
+This loads the battery spec, the scenario switches in `data/run_config.xlsx`, and the prepared price data; runs the full rolling-horizon simulation over the entire ~3-year dataset; and writes a timestamped results workbook to `outputs/optimisation_YYYYMMDD_HHMMSS.xlsx` (previous runs are never overwritten). Solving the full dataset takes several minutes (roughly 6–7 minutes on the machine used for this submission), since it repeatedly re-solves a mixed-integer linear programming (MILP) problem as it rolls
 forward.
 
 ## Test
