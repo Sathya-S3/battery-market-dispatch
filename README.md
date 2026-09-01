@@ -4,30 +4,48 @@ Models the charging and discharging of a price-taking battery across two wholesa
 
 ## Setup
 
-**Windows (PowerShell)** - this is what the submission was developed and verified on:
+### 1. Clone the repository
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e ".[test]"
+Clone the repository and move into the project directory:
+
+```bash
+git clone https://github.com/Sathya-S3/battery-market-dispatch.git
+cd battery-market-dispatch
 ```
 
-If PowerShell blocks the activation script (execution policy), you can skip
-activation entirely and call the venv's Python directly for every command
-below, e.g. `.venv\Scripts\python.exe -m battery_dispatch.run`.
+### 2. Create a virtual environment
 
-**macOS/Linux/Git Bash**:
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[test]"
 ```
 
-Note: a virtual environment is tied to the Python/OS it was created with.
-Do not try to `source`/activate a Windows-created `.venv` from WSL (or vice
-versa) - create a separate `.venv` inside whichever shell you are actually
-running commands from.
+Activate it on Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+or on Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install the package
+
+Install the package and its dependencies:
+
+```bash
+pip install -e .
+```
+
+To install the additional dependency required for the test suite, use:
+
+```bash
+pip install -e ".[test]"
+```
 
 ## Prepare data
 
@@ -40,6 +58,23 @@ python scripts/prepare_data.py
 ```
 
 This validates the raw market data and writes the reusable canonical half-hour price table to `data/processed/market_prices.csv`.
+
+## Configure the market scenario
+
+The market participation scenario can be changed in `data/run_config.xlsx`. The workbook contains four switches controlling whether the battery may charge from or discharge to each market:
+
+- `charge_market_1`
+- `discharge_market_1`
+- `charge_market_2`
+- `discharge_market_2`
+
+Set a switch to `Yes` to allow that action in the corresponding market, or `No` to disable it.
+
+For example, setting Market 2 charging and discharging to `No` restricts the battery to Market 1. The switches may also be configured asymmetrically; for example, the battery can be allowed to charge in Market 1 and discharge in Market 2.
+
+At least one charging route and at least one discharging route must remain enabled. Configurations that disable all charging routes or all discharging routes are rejected during input validation.
+
+The supplied `run_config.xlsx` enables all four options by default.
 
 ## Run
 To run the optimisation over the complete prepared dataset, use:
@@ -58,7 +93,7 @@ To run the test suite, use:
 pytest
 ```
 
-The suite is a small set of focused checks against the optimisation and rolling-simulation logic (not the full multi-minute dataset run).
+The suite is a small set of focused checks against the optimisation and rolling-simulation logic.
 
 ## Expected default result
 
@@ -66,10 +101,11 @@ With `run_config.xlsx` left at its all-`Yes` defaults, the verified reference re
 
 ```text
 52,608 executed half-hour periods
-Total trading profit:     £208,430.46
-Cumulative EFC:            3,468.0
-Final SoC:                  0.0 MWh
-Final usable capacity:      3.86128 MWh
+Total trading profit:              £208,430.46
+Operating profit after fixed OPEX: £193430.46
+Cumulative Equivalent Full Cycles: 3,468.0
+Final State of Charge:             0.0 MWh
+Final usable storage capacity:     3.86128 MWh
 ```
 
 ## Model notes
