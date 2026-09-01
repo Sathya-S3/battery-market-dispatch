@@ -78,8 +78,8 @@ def _summary_frame(dispatch: pd.DataFrame, result: SimulationResult, battery: Ba
     fixed_opex = battery.fixed_opex_gbp_per_year * observed_years(dispatch)
 
     rows = [
-        ("Simulation start", dispatch["timestamp"].iloc[0]),
-        ("Simulation end", dispatch["timestamp"].iloc[-1]),
+        ("Market data start", dispatch["timestamp"].iloc[0]),
+        ("Market data end", dispatch["timestamp"].iloc[-1]),
         ("Number of half-hour periods", len(dispatch)),
         ("Total trading profit (GBP)", result.total_profit),
         ("Fixed operating cost (GBP)", fixed_opex),
@@ -92,15 +92,15 @@ def _summary_frame(dispatch: pd.DataFrame, result: SimulationResult, battery: Ba
         ("Market 2 charging energy (MWh)", m2_charge_energy),
         ("Market 1 discharging energy (MWh)", m1_discharge_energy),
         ("Market 2 discharging energy (MWh)", m2_discharge_energy),
-        ("Cumulative EFC", result.cumulative_efc),
-        ("Cycle lifetime", battery.lifetime_cycles),
+        ("Equivalent full cycles (EFC)", result.cumulative_efc),
+        ("Cycle lifetime limit (EFC)", battery.lifetime_cycles),
         ("Cycle lifetime used (%)", 100 * result.cumulative_efc / battery.lifetime_cycles),
         ("Initial usable capacity (MWh)", battery.max_storage_mwh),
         ("Final usable capacity (MWh)", result.final_usable_capacity),
         ("Capacity degradation (%)", 100 * (1 - result.final_usable_capacity / battery.max_storage_mwh)),
         ("Initial SoC (MWh)", INITIAL_SOC_MWH),
         ("Final SoC (MWh)", result.final_soc),
-        ("Negative-price charging periods", negative_price_charging_periods),
+        ("Negative-price charging periods (half-hours)", negative_price_charging_periods),
     ]
     return pd.DataFrame(rows, columns=["Metric", "Value"])
 
@@ -151,6 +151,103 @@ def _period_summary_frame(dispatch: pd.DataFrame) -> pd.DataFrame:
     return annual
 
 
+# Renamed, human-readable export of the Dispatch sheet only - the
+# internal dataframe columns (used elsewhere by simulation/reporting code)
+# are left unchanged. source_timestamp is intentionally omitted here; it
+# is retained internally for traceability but not exported.
+_DISPATCH_EXPORT_COLUMNS = {
+    "period": "Period",
+    "timestamp": "Timestamp",
+    "market_1_price": "Market 1 price (£/MWh)",
+    "market_2_price": "Market 2 price (£/MWh)",
+    "charge_m1_mw": "Market 1 charge (MW)",
+    "charge_m2_mw": "Market 2 charge (MW)",
+    "discharge_m1_mw": "Market 1 discharge (MW)",
+    "discharge_m2_mw": "Market 2 discharge (MW)",
+    "soc_mwh": "State of charge (MWh)",
+    "period_profit": "Period trading profit (£)",
+}
+
+
+def _dispatch_export_frame(dispatch: pd.DataFrame) -> pd.DataFrame:
+    return dispatch[list(_DISPATCH_EXPORT_COLUMNS)].rename(columns=_DISPATCH_EXPORT_COLUMNS)
+
+
+# Column -> Excel number format, applied where a sheet's columns each have
+# one consistent unit (Dispatch, Period Summary).
+_DISPATCH_NUMBER_FORMATS = {
+    "Market 1 price (£/MWh)": "0.00",
+    "Market 2 price (£/MWh)": "0.00",
+    "Market 1 charge (MW)": "0.000",
+    "Market 2 charge (MW)": "0.000",
+    "Market 1 discharge (MW)": "0.000",
+    "Market 2 discharge (MW)": "0.000",
+    "State of charge (MWh)": "0.000",
+    "Period trading profit (£)": "0.00",
+}
+
+_PERIOD_SUMMARY_NUMBER_FORMATS = {
+    "Trading profit (GBP)": "0.00",
+    "Purchased energy (MWh)": "0.00",
+    "Delivered energy (MWh)": "0.00",
+    "Market 1 charge energy (MWh)": "0.00",
+    "Market 2 charge energy (MWh)": "0.00",
+    "Market 1 discharge energy (MWh)": "0.00",
+    "Market 2 discharge energy (MWh)": "0.00",
+}
+
+# Metric label -> Excel number format, for the Summary sheet's "Value"
+# column, which mixes several units row-by-row. Rows not listed here
+# (counts, dates) are left in their default format.
+_SUMMARY_NUMBER_FORMATS = {
+    "Total trading profit (GBP)": "0.00",
+    "Fixed operating cost (GBP)": "0.00",
+    "Operating profit after fixed OPEX (GBP)": "0.00",
+    "Charging expenditure (GBP)": "0.00",
+    "Discharge revenue (GBP)": "0.00",
+    "Total purchased energy (MWh)": "0.00",
+    "Total delivered energy (MWh)": "0.00",
+    "Market 1 charging energy (MWh)": "0.00",
+    "Market 2 charging energy (MWh)": "0.00",
+    "Market 1 discharging energy (MWh)": "0.00",
+    "Market 2 discharging energy (MWh)": "0.00",
+    "Equivalent full cycles (EFC)": "0.00",
+    "Cycle lifetime used (%)": "0.00",
+    "Initial usable capacity (MWh)": "0.000",
+    "Final usable capacity (MWh)": "0.000",
+    "Capacity degradation (%)": "0.00",
+    "Initial SoC (MWh)": "0.000",
+    "Final SoC (MWh)": "0.000",
+}
+
+_SHEET_NUMBER_FORMATS = {
+    "Dispatch": _DISPATCH_NUMBER_FORMATS,
+    "Period Summary": _PERIOD_SUMMARY_NUMBER_FORMATS,
+}
+
+
+def _apply_number_formats(worksheet, frame: pd.DataFrame, formats: dict) -> None:
+    for col_idx, column in enumerate(frame.columns, start=1):
+        fmt = formats.get(column)
+        if fmt is None:
+            continue
+        column_letter = worksheet.cell(row=1, column=col_idx).column_letter
+        for row_idx in range(2, len(frame) + 2):
+            worksheet[f"{column_letter}{row_idx}"].number_format = fmt
+
+
+def _apply_row_number_formats(worksheet, frame: pd.DataFrame, formats: dict) -> None:
+    """Same idea as _apply_number_formats, but keyed by row label (the
+    first column) rather than by column - for Metric/Value style sheets
+    where the "Value" column mixes several units."""
+    label_column = frame.columns[0]
+    value_column_letter = worksheet.cell(row=1, column=2).column_letter
+    for row_idx, label in enumerate(frame[label_column], start=2):
+        fmt = formats.get(label)
+        if fmt is not None:
+            worksheet[f"{value_column_letter}{row_idx}"].number_format = fmt
+
+
 def _autosize_columns(worksheet, frame: pd.DataFrame) -> None:
     for col_idx, column in enumerate(frame.columns, start=1):
         longest = len(str(column))
@@ -171,7 +268,7 @@ def write_report(
     sheets = {
         "Summary": _summary_frame(dispatch, result, battery),
         "Inputs": _inputs_frame(battery, config),
-        "Dispatch": dispatch,
+        "Dispatch": _dispatch_export_frame(dispatch),
         "Period Summary": _period_summary_frame(dispatch),
     }
 
@@ -182,6 +279,12 @@ def write_report(
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         for sheet_name, frame in sheets.items():
             frame.to_excel(writer, sheet_name=sheet_name, index=False)
-            _autosize_columns(writer.sheets[sheet_name], frame)
+            worksheet = writer.sheets[sheet_name]
+            _autosize_columns(worksheet, frame)
+            number_formats = _SHEET_NUMBER_FORMATS.get(sheet_name)
+            if number_formats:
+                _apply_number_formats(worksheet, frame, number_formats)
+            if sheet_name == "Summary":
+                _apply_row_number_formats(worksheet, frame, _SUMMARY_NUMBER_FORMATS)
 
     return path
