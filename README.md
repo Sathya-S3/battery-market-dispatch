@@ -102,7 +102,7 @@ With `run_config.xlsx` left at its all-`Yes` defaults, the verified reference re
 ```text
 52,608 executed half-hour periods
 Total trading profit:              £208,430.46
-Operating profit after fixed OPEX: £193430.46
+Operating profit after fixed OPEX: £193,430.46
 Cumulative Equivalent Full Cycles: 3,468.0
 Final State of Charge:             0.0 MWh
 Final usable storage capacity:     3.86128 MWh
